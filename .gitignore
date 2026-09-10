@@ -1,2 +1,5 @@
-config.json
 *.db
+.env
+.vscode
+.venv
+.idea

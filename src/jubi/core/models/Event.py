@@ -3,7 +3,7 @@ from enum import StrEnum as Enum
 
 class EventType(Enum):
     REJECTED = "rejected"
-    INTERVIEW = "interview"
+    UPDATE = "update"
 
 class Event(BaseModel):
     name: EventType
