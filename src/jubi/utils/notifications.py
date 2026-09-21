@@ -25,7 +25,7 @@ class Notifications:
         try:
             ret = r.post(self.webhook, json=payload, timeout=10)
         except r.exceptions.RequestException as Error:
-            click.echo("[ERROR] Could not connect to Discord. Please check your network connection or verify that the configured webhook is valid.")
+            raise Error 
     def add_notif(self, job, company):
         payload = {
             'content': f'A new job was added to Jubi! It\'s {job} @ {company}. Good Luck, Akli!',
@@ -33,9 +33,8 @@ class Notifications:
         }
         try:
             ret = r.post(self.webhook, json=payload, timeout=10)
-            click.echo("A job has been added to Jubi. A confirmation message has been sent to Discord!")
         except r.exceptions.RequestException as Error:
-            click.echo("[ERROR] Could not connect to Discord. Please check your network connection or verify that the configured webhook is valid.")
+            raise Error 
             
             
 
