@@ -11,6 +11,7 @@ def add_job(name, company, date, status):
     convert = Job.convert(status)
     if(convert is None):
         raise JobValidationError("Status Incorrect")
+    
     validate = None
     try:
         validate = Job(name=name, company=company, date_applied=date, status= convert)
