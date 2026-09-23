@@ -1,6 +1,6 @@
 # Jubi
 
-A Job Tracker CLI for the Agentic AI Age
+A Job Tracker CLI 
 
 ```bash
 
