@@ -1,36 +1,65 @@
-import sqlite3
-from sqlite3 import Connection
+from dotenv import load_dotenv
+import psycopg as postgres
+from psycopg import Connection as PGConnection
+import os
+from pathlib import Path
 
-from pathlib import Path 
-DATABASE_PATH = Path(__file__).resolve().parent / "jubi.db"
-
-def get_database(in_memory: bool) -> Connection:
-    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    return sqlite3.connect(DATABASE_PATH) if not in_memory else sqlite3.connect(":memory:")
-
-
-def init_database(conn: Connection | None = None):
-    db_conn = None
-    if(conn == None):
-        db_conn = get_database(False)
-    else:
-        db_conn = conn
-    try:
-        create_db = '''
-            CREATE TABLE IF NOT EXISTS jobs(job_id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            job_name TEXT NOT NULL, company TEXT NOT NULL, 
-            date_applied TEXT NOT NULL, status TEXT NOT NULL)
-            '''
-        
-        db_conn.cursor().execute(create_db)
-        db_conn.commit()
-
-    except sqlite3.Error:
-        db_conn.rollback()
-        raise sqlite3.Error
+dotenv_path = Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(dotenv_path=dotenv_path)
 
 
+class DatabaseController:
+    @staticmethod
+    def get_PG_database() -> PGConnection:
+        return postgres.connect(os.environ["DATABASE"])
 
+    @staticmethod
+    def init_pg_database(connect: PGConnection):
+        pg_conn = connect
+        with pg_conn as conn:
+            # 2. Open a cursor to perform database operations
+            with conn.cursor() as cur:
+                # Create a sample table
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS jobs (
+                        job_id SERIAL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        company TEXT NOT NULL, 
+                        date_applied DATE NOT NULL, 
+                        status TEXT NOT NULL
+                    );
+                """)
 
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS status_history (
+                        transaction_id SERIAL PRIMARY KEY,
+                        job_id INT REFERENCES jobs(job_id),
+                        prev_status TEXT NOT NULL,
+                        new_status TEXT NOT NULL,
+                        date_change DATE NOT NULL
 
+                    );
+                        """)
+    @staticmethod
+    def admin_create_tables(connect: PGConnection):
+        pg_conn = connect
+        cur = pg_conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS jobs (
+                job_id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                company TEXT NOT NULL,
+                date_applied DATE NOT NULL,
+                status TEXT NOT NULL
+            );
+        """)
 
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS status_history (
+                transaction_id SERIAL PRIMARY KEY,
+                job_id INT REFERENCES jobs(job_id),
+                prev_status TEXT NOT NULL,
+                new_status TEXT NOT NULL,
+                date_change DATE NOT NULL
+            );
+        """)

@@ -1,85 +1,132 @@
-import sqlite3
-from jubi.core.repository import database as db 
+from pathlib import Path
+
+from jubi.core.repository.database import DatabaseController as db
+from datetime import datetime
+from dotenv import load_dotenv
+import os
+
 
 def add_job(name, company, date_applied, status) -> bool:
-    conn = db.get_database(False)
-    try:
-        conn.cursor().execute("""INSERT INTO jobs 
-                            (job_name, company, date_applied, status) 
-                            VALUES (?, ?, ?, ?)""", (name, company, date_applied, status,))
-        conn.commit()
-        return True
-    except sqlite3.Error as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.close()
+    conn = db.get_PG_database()
+    db.init_pg_database(conn)
 
-def list_all_jobs(rejection:bool, applied:bool, interview:bool, offer:bool):
-    conn = db.get_database(False)
-    filter_rejected = f"{"status = 'rejected'" if rejection else ""}"
-    filter_applied = f"{"status = 'applied'" if applied else ""}"
-    filter_interview = f"{"status = 'interview'" if interview else ""}"
-    filter_offer = f"{"status = 'offer'" if offer else ""}"
-    filters = [filter_rejected, filter_applied, filter_interview, filter_offer]
-    try:
-        cursor = conn.cursor()
-        if filters == ["", "", "", ""]:
-            cursor.execute("SELECT job_id, job_name, company, date_applied, status from jobs")
-            result = cursor.fetchall()
-            return result
-        else:
-            filter_str = ""
-            for i in range(len(filters)):
-                if(filter_str != "" and filters[i] != ""):
-                    filter_str += " OR "
-                filter_str += filters[i]
-                    
-            cursor.execute(f"SELECT * FROM jobs WHERE {filter_str}")
-            results = cursor.fetchall()
-            return results
+    new_conn = db.get_PG_database()
+    with new_conn as pg_conn:
+        with pg_conn.cursor() as cur:
+            cur.execute(
+                """
+                    INSERT INTO jobs
+                        (name, company, date_applied, status)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING job_id
+                    """,
+                (name, company, date_applied, status),
+            )
+            row = cur.fetchone()
+            assert row is not None  # RETURNING always gives back the inserted row
+            job_id = row[0]
+            cur.execute(
+                """
+                        INSERT INTO status_history(job_id, prev_status, new_status, date_change )
+                        VALUES (%s, %s, %s, %s)
 
-    finally:
-        conn.close()
+                    """,
+                (job_id, "", status, datetime.now()),
+            )
+    return True
+
+
+# "DELETE FROM jobs WHERE job_id = ?", (job_id,)
+# "SELECT * FROM jobs WHERE job_id = ?", (job_id,)
+
+
+def list_all_jobs(filters: list[str]):
+    conn = db.get_PG_database()
+    db.init_pg_database(conn)
+    new_conn = db.get_PG_database()
+    with new_conn as pg_conn:
+        with pg_conn.cursor() as cursor:
+            if not filters:
+                cursor.execute(
+                    "SELECT job_id, name, company, date_applied, status FROM jobs"
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT job_id, name, company, date_applied, status
+                    FROM jobs
+                    WHERE status = ANY(%s)
+                    """,
+                    (list(filters),),
+                )
+            return cursor.fetchall()
+
 
 def delete_job(job_id):
-    conn = db.get_database(False)
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,))
-        if not cursor.fetchall():
-            return False
-        else:
+    conn = db.get_PG_database()
+    db.init_pg_database(conn)
+    new_conn = db.get_PG_database()
+    with new_conn as pg_conn:
+        with pg_conn.cursor() as cursor:
+            select = cursor.execute(
+                """
+                SELECT * FROM jobs WHERE job_id = %s
             
-            cursor.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
-            conn.commit()
-            return True
-    except sqlite3.Error as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.close()
+            """,
+                (job_id,),
+            )
+            check = select.fetchall()
+            if check == []:
+                return False
+            else:
+                # status_history rows reference this job, so they have to go first
+                cursor.execute(
+                    """
+                DELETE FROM status_history WHERE job_id = %s
+                """,
+                    (job_id,),
+                )
+                cursor.execute(
+                    """
+                DELETE FROM jobs WHERE job_id = %s
+            
+            """,
+                    (job_id,),
+                )
+    return True
 
+
+# cursor.execute("UPDATE jobs SET status = ? WHERE job_id = ?", (new_status, job_id,))
 def update_job_status(job_id: int, new_status: str) -> bool:
-    conn = db.get_database(False)
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM jobs WHERE job_id = ?", (job_id,))
-        ret = cursor.fetchone() 
-        if ret is None:
-            return False
-        else:
-            cursor.execute("UPDATE jobs SET status = ? WHERE job_id = ?", (new_status, job_id,))
-            conn.commit()
-            return True
-    except sqlite3.Error as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.close()
+    conn = db.get_PG_database()
+    db.init_pg_database(conn)
+    new_conn = db.get_PG_database()
+    with new_conn as pg_conn:
+        with pg_conn.cursor() as cursor:
+            ex = cursor.execute(
+                """
+                SELECT * FROM jobs WHERE job_id = %s
+                        
+                    """,
+                (job_id,),
+            )
+            jobs = cursor.fetchall()
+            if jobs == []:
+                return False
+            else:
+                cursor.execute(
+                    """  
+                    INSERT INTO status_history(job_id, prev_status, new_status, date_change )
+                    VALUES (%s, %s, %s, %s)
 
-
-
-
-
-    
+                """,
+                    (job_id, jobs[0][4], new_status, datetime.now()),
+                )
+                cursor.execute(
+                    """UPDATE jobs SET status = %s WHERE job_id = %s""",
+                    (
+                        new_status,
+                        job_id,
+                    ),
+                )
+                return True

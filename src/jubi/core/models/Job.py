@@ -7,7 +7,11 @@ class JobStatus(StrEnum):
     APPLIED = "applied"
     REJECTED = "rejected"
     INTERVIEW = "interview"
+    GHOSTED = "ghosted"
+    WITHDRAWN = "withdrawn"
+    OA = "online assessment"
     OFFER = "offer"
+
 
 class Job(BaseModel):
     name: str
@@ -17,17 +21,14 @@ class Job(BaseModel):
 
     @staticmethod
     def convert(status: str) -> JobStatus | None:
-        hashmap = {
+        conversion_table = {
             "applied": JobStatus.APPLIED,
             "rejected": JobStatus.REJECTED,
             "interview": JobStatus.INTERVIEW,
-            "offer": JobStatus.OFFER
+            "offer": JobStatus.OFFER,
+            "ghosted": JobStatus.GHOSTED,
+            "withdrawn": JobStatus.WITHDRAWN,
+            "online assessment": JobStatus.OA,
         }
 
-        return hashmap.get(status)
-
-
-
-
-
-
+        return conversion_table.get(status)
