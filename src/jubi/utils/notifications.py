@@ -4,6 +4,7 @@ import click
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from jubi.core.models.ResumeAnalysis import ResumeModelResponse
 
 dotenv_path = Path(__file__).resolve().parents[3] / ".env"
 load_dotenv(dotenv_path=dotenv_path)
@@ -34,3 +35,24 @@ class Notifications:
             ret = r.post(self.webhook, json=payload, timeout=10)
         except r.exceptions.RequestException as Error:
             raise Error
+
+    def analysis_notif(self, response: ResumeModelResponse):
+        payload = {
+            "content": f"""Here's your Jubi Analysis:\nMatch Percent: {response.match_percent}\nApply? {"Yes" if response.apply else "No"}""",
+        }
+        try:
+            ret = r.post(self.webhook, json=payload, timeout=10)
+        except r.exceptions.RequestException as Error:
+            raise Error
+
+        self._post(response.analysis)
+
+    def _post(self, content: str):
+        DISCORD_CHARACTER_LIMIT = 2000
+        for i in range(0, len(content), DISCORD_CHARACTER_LIMIT):
+            ret = r.post(
+                self.webhook,
+                json={"content": content[i : i + DISCORD_CHARACTER_LIMIT]},
+                timeout=10,
+            )
+            ret.raise_for_status()

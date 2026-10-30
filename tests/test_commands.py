@@ -1,25 +1,25 @@
 import os
-
+from pathlib import Path
 from click.testing import CliRunner
 import pytest
 from requests import RequestException
 import psycopg as postgres
 from unittest.mock import MagicMock
-
+import platformdirs
 from jubi.core.models.Job import Job, JobStatus
 from jubi.core.repository import job_repository
 from jubi.core.services import job_service
 from jubi.core.repository.database import DatabaseController
 from jubi.utils.notifications import Notifications
+from jubi.core.repository.resume_repository import ResumeRepository
 
 
 @pytest.fixture
 def db_connection():
     conn = postgres.connect(os.environ["TESTDATABASE"])
     try:
-        
-        yield conn 
-        
+        yield conn
+
     finally:
         conn.rollback()
         conn.close()
@@ -74,22 +74,23 @@ class TestUpdateStatus:
         with pytest.raises(postgres.Error):
             job_service.update_status(1, "interview")
 
+
 class TestDelete:
     @pytest.mark.parametrize("repo_result", [True, False])
     def test_delete_job_returns_repo_result(self, monkeypatch, repo_result):
         mock_delete = MagicMock()
-        mock_delete.return_value = repo_result 
+        mock_delete.return_value = repo_result
 
         monkeypatch.setattr(job_service.job_repository, "delete_job", mock_delete)
 
-        assert job_service.delete_job_from_db(1) is repo_result 
+        assert job_service.delete_job_from_db(1) is repo_result
         mock_delete.assert_called_once_with(1)
 
-class TestDatabase:
 
+class TestDatabase:
     def test_database_creation(self, monkeypatch, db_connection):
         monkeypatch.setenv("DATABASE", "TESTDATABASE")
-        
+
         DatabaseController.admin_create_tables(db_connection)
 
         result = db_connection.execute("""
@@ -106,22 +107,40 @@ class TestDatabase:
                     AND table_name = 'status_history'
                 """).fetchone()
 
-
         assert result is not None and result2 is not None
 
-class TestNotifications:
 
+class TestNotifications:
     def test_notification_fail(self, monkeypatch):
         monkeypatch.delenv("WEBHOOK")
 
         with pytest.raises(RuntimeError):
             notification_class = Notifications()
 
-    
 
+class TestResumeRepository:
+    def test_add_resume(self):
+        # arrange
+        resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Resume.pdf")
+        repo = ResumeRepository()
 
+        repo.add_resume(resume)
 
-        
+        assert Path(repo.resume_path / "Akli_Amrous_Resume.pdf").exists()
 
+    def test_add_resume_doesnt_exist(self):
+        # arrange
+        resume = Path("/Users/akliamrous/Desktop/John_Amrous_Resume.pdf")
+        repo = ResumeRepository()
 
+        result = repo.add_resume(resume)
 
+        assert result == False
+
+    def test_get_resumes(self):
+        resume = Path("/Users/akliamrous/Downloads/Akli_Amrous_Resume.pdf")
+        repo = ResumeRepository()
+
+        repo.add_resume(resume)
+
+        assert len(repo.get_resumes()) > 0

@@ -12,3 +12,15 @@ class JobValidationError(Exception):
 
 class NotificationError(Exception):
     """Raise when a notification fails"""
+
+
+class ResumeUploadError(Exception):
+    """Raise when uploading fails"""
+
+
+class ResumeAccessError(Exception):
+    """Raise when access fails"""
+
+
+class JobDescriptionError(Exception):
+    """Raise when no job descript"""

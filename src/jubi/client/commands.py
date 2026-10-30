@@ -1,8 +1,15 @@
 import click
 import psycopg as postgres
 from jubi.core.models.Job import JobStatus
-from jubi.core.services import job_service
-from jubi.utils.exceptions import JobWriteError, JobValidationError, NotificationError
+from jubi.core.services import job_service, resume_service
+from jubi.utils.exceptions import (
+    JobDescriptionError,
+    JobWriteError,
+    JobValidationError,
+    NotificationError,
+    ResumeAccessError,
+    ResumeUploadError,
+)
 from jubi.core.repository.database import DatabaseController as db
 from datetime import datetime
 import json as json
@@ -58,7 +65,9 @@ def add(name, company, date, status, url):
 )
 def list_jobs(status):
     try:
-        all_jobs = job_service.get_all_jobs("online assessment" if s == "oa" else s for s in list(status))
+        all_jobs = job_service.get_all_jobs(
+            "online assessment" if s == "oa" else s for s in list(status)
+        )
         # click.echo(all_jobs)
 
         if not all_jobs:
@@ -87,7 +96,6 @@ def delete(job_id):
             raise click.ClickException(f"Error{e}")
 
 
-
 @click.command(name="update", help="Update job status")
 @click.argument("job_id")
 @click.option("--status", "-s", help="The new status of the application")
@@ -100,3 +108,32 @@ def update(job_id, status):
             click.echo(f"Job #{job_id} was not found in the tracker")
     except postgres.Error as e:
         raise click.ClickException(f"Error {e}")
+
+
+@click.command(name="analyze", help="Analyze your resume against a job description")
+@click.argument(
+    "job_file", type=click.Path(exists=True, dir_okay=False, path_type=Path)
+)
+def analyze(job_file):
+    click.echo("Your analysis will be sent to Discord. This may take a few minutes...")
+    try:
+        resume_service.analyze_resume(job_file)
+        click.echo("Your resume analysis has just been sent to Discord")
+    except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:
+        raise click.ClickException(f"[ERROR] {e}")
+    except NotificationError as e:
+        raise click.ClickException(
+            f"[ERROR] Analysis finished but failed to send to Discord: {e}"
+        )
+
+
+@click.command(name="upload", help="Upload a resume to Jubi")
+@click.argument(
+    "resume_file", type=click.Path(exists=True, dir_okay=False, path_type=Path)
+)
+def upload(resume_file):
+    try:
+        resume_service.upload_resume(resume_file)
+        click.echo("Upload successful")
+    except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:
+        raise click.ClickException(f"[ERROR] {e}")

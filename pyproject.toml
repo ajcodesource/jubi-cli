@@ -17,6 +17,9 @@ dependencies = [
     "fastapi[standard]>=0.141.1",
     "rich-click>=1.9.9",
     "psycopg[binary]>=3.3.6",
+    "pypdf>=6.21.4",
+    "platformdirs>=4.14.0",
+    "google-genai>=2.34.0",
 ]
 
 [project.scripts]

@@ -16,7 +16,7 @@ class JobStatus(StrEnum):
 class Job(BaseModel):
     name: str
     company: str
-    date_applied: datetime | None = None
+    date_applied: datetime
     status: JobStatus = JobStatus.APPLIED
 
     @staticmethod

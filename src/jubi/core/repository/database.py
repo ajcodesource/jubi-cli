@@ -40,6 +40,7 @@ class DatabaseController:
 
                     );
                         """)
+
     @staticmethod
     def admin_create_tables(connect: PGConnection):
         pg_conn = connect
