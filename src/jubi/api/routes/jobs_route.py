@@ -3,7 +3,7 @@ from jubi.core.services import job_service
 from jubi.core.models.Job import Job
 from psycopg import Error
 
-from jubi.utils.exceptions import JobValidationError, JobWriteError, NotificationError
+from jubi.integrations.exceptions import JobValidationError, JobWriteError, NotificationError
 
 router = APIRouter(
     prefix="/jobs",

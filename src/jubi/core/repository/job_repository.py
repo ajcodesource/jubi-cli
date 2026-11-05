@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 
-def add_job(name, company, date_applied, status) -> bool:
+def add_job(name, company, date_applied, status):
     conn = db.get_PG_database()
     db.init_pg_database(conn)
 
@@ -30,7 +30,6 @@ def add_job(name, company, date_applied, status) -> bool:
                     """,
                 (job_id, "", status, datetime.now()),
             )
-    return True
 
 
 # "DELETE FROM jobs WHERE job_id = ?", (job_id,)

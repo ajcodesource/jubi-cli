@@ -10,7 +10,7 @@ from jubi.core.models.Job import Job, JobStatus
 from jubi.core.repository import job_repository
 from jubi.core.services import job_service
 from jubi.core.repository.database import DatabaseController
-from jubi.utils.notifications import Notifications
+from jubi.integrations.notifications import Notifications
 from jubi.core.repository.resume_repository import ResumeRepository
 
 

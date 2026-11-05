@@ -1,7 +1,7 @@
 from jubi.core.models.Job import Job
 from jubi.core.repository import job_repository
-from jubi.utils.notifications import Notifications
-from jubi.utils.exceptions import JobWriteError, JobValidationError, NotificationError
+from jubi.integrations.notifications import Notifications
+from jubi.integrations.exceptions import JobWriteError, JobValidationError, NotificationError
 from requests.exceptions import RequestException
 from psycopg import Error as PGError
 import pydantic
@@ -9,33 +9,21 @@ import pydantic
 
 # click.echo("A job has been added to Jubi. A confirmation message has been sent to Discord!")
 def add_job(name, company, date, status):
-    convert = Job.convert(status)
-    if convert is None:
-        raise JobValidationError("Status Invalid")
-
-    validate = None
     try:
-        validate = Job(name=name, company=company, date_applied=date, status=convert)
+        normalized_job_status = Job.convert(status)
+        if normalized_job_status is None:
+            raise JobValidationError("Status Invalid")
 
+        validated_model = Job(name=name, company=company, date_applied=date, status=normalized_job_status)
+        job_repository.add_job(
+                    validated_model.name, 
+                    validated_model.company, 
+                    validated_model.date_applied, 
+                    validated_model.status
+                )
+              
     except pydantic.ValidationError as e:
         raise JobValidationError(f"Job could not be validated {e}")
-
-    try:
-        success = job_repository.add_job(
-            validate.name, validate.company, validate.date_applied, validate.status
-        )
-        if success:
-            try:
-                notif = Notifications()
-                notif.add_notif(validate.name, validate.company)
-
-            except RequestException as r:
-                raise NotificationError(f"Notification Failed {r}")
-
-        else:
-            raise JobWriteError(
-                f"Failed to write job {validate.name} at {validate.company}"
-            )
     except PGError as e:
         raise JobWriteError(f"Failed to write job {e}")
 

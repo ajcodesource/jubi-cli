@@ -3,7 +3,7 @@ from jubi.core.models.ResumeAnalysis import ResumeAnalysisRequest
 from jubi.core.services.resume_service import analyze_resume
 from google.genai import errors
 import requests as req
-from jubi.utils.notifications import Notifications
+from jubi.integrations.notifications import Notifications
 router = APIRouter(
     prefix="/resume",
     tags=["resume"],

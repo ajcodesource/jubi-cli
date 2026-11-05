@@ -1,6 +1,6 @@
 from pathlib import Path
 from jubi.core.repository.resume_repository import ResumeRepository
-from jubi.utils.exceptions import (
+from jubi.integrations.exceptions import (
     JobDescriptionError,
     NotificationError,
     ResumeAccessError,
@@ -9,7 +9,7 @@ from jubi.utils.exceptions import (
 from requests.exceptions import RequestException
 from pypdf import PdfReader
 from jubi.client.llm_client import LLM_Client
-from jubi.utils.notifications import Notifications
+from jubi.integrations.notifications import Notifications
 
 
 def upload_resume(resume: Path):

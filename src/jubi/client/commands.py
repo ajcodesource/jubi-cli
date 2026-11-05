@@ -1,9 +1,10 @@
 import click
 import psycopg as postgres
+from requests import RequestException
 from jubi.client import controller
 from jubi.core.models.Job import JobStatus
-from jubi.core.services import job_service, resume_service
-from jubi.utils.exceptions import (
+from jubi.core.services import job_service, notification_service, resume_service
+from jubi.integrations.exceptions import (
     JobDescriptionError,
     JobWriteError,
     JobValidationError,
@@ -42,16 +43,19 @@ def add(name, company, date, status):
         job_service.add_job(name, company, date, status)
         click.echo(f"The job {name} at {company} was successfully added")
         click.echo("An alert has just been sent to Discord")
+
+        notification_service.send_add_notification(name, company)
+
     except JobValidationError as e:
         raise click.ClickException(f"[ERROR] Invalid job data: {e}")
     except JobWriteError as e:
         raise click.ClickException(f"[ERROR] {e}")
+
     except NotificationError as e:
-        raise click.ClickException(
-            "[ERROR] Failed to send notification but job added successfully"
-        )
-
-
+            raise click.ClickException(
+                "[ERROR] Failed to send notification but job added successfully"
+            )
+    
 @click.command(name="list", help="List all jobs currently being tracked")
 @click.option(
     "--status",
