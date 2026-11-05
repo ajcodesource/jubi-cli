@@ -39,8 +39,6 @@ def get_job_description(job_file: Path) -> str:
     except OSError as e:
         raise JobDescriptionError(f"Couldn't read {job_file}: {e.strerror}") from e
 
-
-###
 def analyze_resume(job_file: Path):
     resumes = get_resumes()
     if not resumes:
@@ -57,8 +55,5 @@ def analyze_resume(job_file: Path):
 
     analyzer = LLM_Client()
     response = analyzer.send_prompt(resume_text, description)
-    try:
-        notify = Notifications()
-        notify.analysis_notif(response)
-    except RequestException as e:
-        raise NotificationError(f"Notification Failed {e}") from e
+
+    return response

@@ -3,7 +3,7 @@ from jubi.core.services import job_service
 from jubi.core.models.Job import Job
 from psycopg import Error
 
-from jubi.utils.exceptions import JobValidationError, JobWriteError
+from jubi.utils.exceptions import JobValidationError, JobWriteError, NotificationError
 
 router = APIRouter(
     prefix="/jobs",
@@ -35,13 +35,20 @@ async def jobs():
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def add_job(job: Job):
+    notified = True
     try:
         job_service.add_job(job.name, job.company, job.date_applied, job.status)
-        return job
-    except Error:
+        
+    except (Error, JobWriteError) as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database Error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Write Error {e}"
         )
+    except NotificationError as e:
+        notified = False
+    return {"posted_job": job, "notification_sent": notified, "success": True } 
+    
+
+
 
 
 @router.delete("/delete/{job_id}", status_code=status.HTTP_200_OK)

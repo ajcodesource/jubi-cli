@@ -1,9 +1,6 @@
-from pathlib import Path
-
 from jubi.core.repository.database import DatabaseController as db
 from datetime import datetime
-from dotenv import load_dotenv
-import os
+
 
 
 def add_job(name, company, date_applied, status) -> bool:

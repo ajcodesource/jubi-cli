@@ -1,5 +1,6 @@
 import click
 import psycopg as postgres
+from jubi.client import controller
 from jubi.core.models.Job import JobStatus
 from jubi.core.services import job_service, resume_service
 from jubi.utils.exceptions import (
@@ -32,8 +33,7 @@ from pathlib import Path
     prompt="Enter the application status. Default:",
     default=f"{JobStatus.APPLIED}",
 )
-@click.option("--url", "-u", help="Greenhouse or Lever URL")
-def add(name, company, date, status, url):
+def add(name, company, date, status):
     try:
         if name is None:
             name = click.prompt("Enter the job title")
@@ -63,12 +63,12 @@ def add(name, company, date, status, url):
     multiple=True,
     help="Filter by Status",
 )
-def list_jobs(status):
+def list_jobs(status: tuple):
     try:
+        print(type(status))
         all_jobs = job_service.get_all_jobs(
-            "online assessment" if s == "oa" else s for s in list(status)
+            ["online assessment" if s == "oa" else s for s in list(status)]
         )
-        # click.echo(all_jobs)
 
         if not all_jobs:
             click.echo("No applications found")
@@ -117,7 +117,8 @@ def update(job_id, status):
 def analyze(job_file):
     click.echo("Your analysis will be sent to Discord. This may take a few minutes...")
     try:
-        resume_service.analyze_resume(job_file)
+        #resume_service.analyze_resume(job_file)
+        res = controller.getAnalysis(job_file)
         click.echo("Your resume analysis has just been sent to Discord")
     except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:
         raise click.ClickException(f"[ERROR] {e}")

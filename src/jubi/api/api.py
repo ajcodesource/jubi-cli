@@ -1,9 +1,11 @@
 from fastapi import FastAPI, status
 from jubi.api.routes.jobs_route import router as jobs_router
+from jubi.api.routes.resume_route import router as resume_router
 
 
 app = FastAPI()
 app.include_router(jobs_router)
+app.include_router(resume_router)
 
 
 @app.get("/")

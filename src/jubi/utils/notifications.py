@@ -23,7 +23,7 @@ class Notifications:
             "content": f"An update to the position: {job_name} @ {company} was just made.",
         }
         try:
-            ret = r.post(self.webhook, json=payload, timeout=10)
+            r.post(self.webhook, json=payload, timeout=10)
         except r.exceptions.RequestException as Error:
             raise Error
 
@@ -32,7 +32,7 @@ class Notifications:
             "content": f"A new job was added to Jubi! It's {job} @ {company}. Good Luck, Akli!",
         }
         try:
-            ret = r.post(self.webhook, json=payload, timeout=10)
+            r.post(self.webhook, json=payload, timeout=10)
         except r.exceptions.RequestException as Error:
             raise Error
 
@@ -40,11 +40,9 @@ class Notifications:
         payload = {
             "content": f"""Here's your Jubi Analysis:\nMatch Percent: {response.match_percent}\nApply? {"Yes" if response.apply else "No"}""",
         }
-        try:
-            ret = r.post(self.webhook, json=payload, timeout=10)
-        except r.exceptions.RequestException as Error:
-            raise Error
-
+        
+        ret = r.post(self.webhook, json=payload, timeout=10)
+        ret.raise_for_status()
         self._post(response.analysis)
 
     def _post(self, content: str):
