@@ -40,7 +40,7 @@ class Notifications:
         payload = {
             "content": f"""Here's your Jubi Analysis:\nMatch Percent: {response.match_percent}\nApply? {"Yes" if response.apply else "No"}""",
         }
-        
+
         ret = r.post(self.webhook, json=payload, timeout=10)
         ret.raise_for_status()
         self._post(response.analysis)

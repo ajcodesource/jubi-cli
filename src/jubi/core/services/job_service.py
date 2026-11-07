@@ -1,7 +1,11 @@
 from jubi.core.models.Job import Job
 from jubi.core.repository import job_repository
 from jubi.integrations.notifications import Notifications
-from jubi.integrations.exceptions import JobWriteError, JobValidationError, NotificationError
+from jubi.integrations.exceptions import (
+    JobWriteError,
+    JobValidationError,
+    NotificationError,
+)
 from requests.exceptions import RequestException
 from psycopg import Error as PGError
 import pydantic
@@ -14,14 +18,16 @@ def add_job(name, company, date, status):
         if normalized_job_status is None:
             raise JobValidationError("Status Invalid")
 
-        validated_model = Job(name=name, company=company, date_applied=date, status=normalized_job_status)
+        validated_model = Job(
+            name=name, company=company, date_applied=date, status=normalized_job_status
+        )
         job_repository.add_job(
-                    validated_model.name, 
-                    validated_model.company, 
-                    validated_model.date_applied, 
-                    validated_model.status
-                )
-              
+            validated_model.name,
+            validated_model.company,
+            validated_model.date_applied,
+            validated_model.status,
+        )
+
     except pydantic.ValidationError as e:
         raise JobValidationError(f"Job could not be validated {e}")
     except PGError as e:

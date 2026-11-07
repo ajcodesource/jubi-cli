@@ -42,20 +42,21 @@ def add(name, company, date, status):
             company = click.prompt("Enter the company name")
         job_service.add_job(name, company, date, status)
         click.echo(f"The job {name} at {company} was successfully added")
-        click.echo("An alert has just been sent to Discord")
-
-        notification_service.send_add_notification(name, company)
-
+        
     except JobValidationError as e:
         raise click.ClickException(f"[ERROR] Invalid job data: {e}")
     except JobWriteError as e:
         raise click.ClickException(f"[ERROR] {e}")
 
+    try:
+        notification_service.send_add_notification(name, company)
+        click.echo("An alert will been sent to Discord")
     except NotificationError as e:
-            raise click.ClickException(
-                "[ERROR] Failed to send notification but job added successfully"
-            )
-    
+        raise click.ClickException(
+            "[ERROR] Failed to send notification"
+        )
+
+
 @click.command(name="list", help="List all jobs currently being tracked")
 @click.option(
     "--status",
@@ -121,7 +122,7 @@ def update(job_id, status):
 def analyze(job_file):
     click.echo("Your analysis will be sent to Discord. This may take a few minutes...")
     try:
-        #resume_service.analyze_resume(job_file)
+        # resume_service.analyze_resume(job_file)
         res = controller.getAnalysis(job_file)
         click.echo("Your resume analysis has just been sent to Discord")
     except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:

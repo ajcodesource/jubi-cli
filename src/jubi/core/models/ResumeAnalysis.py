@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from pathlib import Path
 
+
 class ResumeModelResponse(BaseModel):
     match_percent: str = Field(
         description="Percent match resume alignment with job description "

@@ -39,6 +39,7 @@ def get_job_description(job_file: Path) -> str:
     except OSError as e:
         raise JobDescriptionError(f"Couldn't read {job_file}: {e.strerror}") from e
 
+
 def analyze_resume(job_file: Path):
     resumes = get_resumes()
     if not resumes:

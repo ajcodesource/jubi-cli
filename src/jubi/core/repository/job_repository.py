@@ -2,7 +2,6 @@ from jubi.core.repository.database import DatabaseController as db
 from datetime import datetime
 
 
-
 def add_job(name, company, date_applied, status):
     conn = db.get_PG_database()
     db.init_pg_database(conn)
