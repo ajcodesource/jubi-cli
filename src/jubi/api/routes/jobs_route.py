@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
-from jubi.core.services import job_service
+from fastapi.responses import JSONResponse
+from jubi.core.services import job_service, notification_service
 from jubi.core.models.Job import Job
 from psycopg import Error
 
@@ -16,7 +17,7 @@ router = APIRouter(
 
 
 @router.get("/")
-async def jobs():
+def jobs():
     try:
         result = job_service.get_all_jobs([])
         if result == []:
@@ -38,23 +39,48 @@ async def jobs():
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def add_job(job: Job):
+def add_job(job: Job):
     notified = True
     try:
         job_service.add_job(job.name, job.company, job.date_applied, job.status)
 
-    except (Error, JobWriteError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Write Error {e}"
+    except JobWriteError as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "posted_job": None,
+                "notification_sent": False,
+                "success": False,
+                "message": "An unexpected server error occurred. Please try again later.",
+            },
         )
+    except JobValidationError as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "posted_job": None,
+                "notification_sent": False,
+                "success": False,
+                "message": "An unexpected server error occurred. Please try again later.",
+            },
+        )
+
+    try:
+        notification_service.send_add_notification(job.name, job.company)
+
     except NotificationError as e:
         notified = False
-        
-    return {"posted_job": job, "notification_sent": notified, "success": True}
+
+    return {
+        "posted_job": job,
+        "notification_sent": notified,
+        "success": True,
+        "message": "Job successfully added.",
+    }
 
 
 @router.delete("/{job_id}", status_code=status.HTTP_200_OK)
-async def delete_job(job_id: int):
+def delete_job(job_id: int):
 
     try:
         success = job_service.delete_job_from_db(job_id)

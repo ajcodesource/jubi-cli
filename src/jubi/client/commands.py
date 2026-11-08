@@ -1,6 +1,6 @@
 import click
 import psycopg as postgres
-from requests import RequestException
+from requests import ConnectionError
 from jubi.client import controller
 from jubi.core.models.Job import JobStatus
 from jubi.core.services import job_service, notification_service, resume_service
@@ -13,7 +13,7 @@ from jubi.integrations.exceptions import (
     ResumeUploadError,
 )
 from jubi.core.repository.database import DatabaseController as db
-from datetime import datetime
+from datetime import datetime, timezone
 import json as json
 from pathlib import Path
 
@@ -26,7 +26,7 @@ from pathlib import Path
     "-d",
     prompt="Enter the date applied. Default:",
     type=click.DateTime(formats=["%Y-%m-%d"]),
-    default=f"{datetime.now().strftime('%Y-%m-%d')}",
+    default=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
 )
 @click.option(
     "--status",
@@ -34,26 +34,26 @@ from pathlib import Path
     prompt="Enter the application status. Default:",
     default=f"{JobStatus.APPLIED}",
 )
+
+# TODO Decouple CLI and serr
+
 def add(name, company, date, status):
     try:
         if name is None:
             name = click.prompt("Enter the job title")
         if company is None:
             company = click.prompt("Enter the company name")
-        job_service.add_job(name, company, date, status)
-        click.echo(f"The job {name} at {company} was successfully added")
-        
+
+        res = controller.postJob(name, company, date, status)
+        click.echo(res.json())
+
     except JobValidationError as e:
         raise click.ClickException(f"[ERROR] Invalid job data: {e}")
     except JobWriteError as e:
         raise click.ClickException(f"[ERROR] {e}")
-
-    try:
-        notification_service.send_add_notification(name, company)
-        click.echo("An alert will been sent to Discord")
-    except NotificationError as e:
+    except ConnectionError as e:
         raise click.ClickException(
-            "[ERROR] Failed to send notification"
+            f"[ERROR] Could not connect to the server. Please try again later."
         )
 
 
