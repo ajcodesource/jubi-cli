@@ -88,11 +88,11 @@ def delete_job(job_id):
             """,
                     (job_id,),
                 )
-    return True
+            return cursor.rowcount
 
 
 # cursor.execute("UPDATE jobs SET status = ? WHERE job_id = ?", (new_status, job_id,))
-def update_job_status(job_id: int, new_status: str) -> bool:
+def update_job_status(job_id: int, new_status: str):
     conn = db.get_PG_database()
     db.init_pg_database(conn)
     new_conn = db.get_PG_database()
@@ -124,4 +124,4 @@ def update_job_status(job_id: int, new_status: str) -> bool:
                         job_id,
                     ),
                 )
-                return True
+                return cursor.rowcount

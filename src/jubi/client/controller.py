@@ -23,5 +23,21 @@ def postJob(name, company, date, status):
 
     payload = validated_model.model_dump(mode="json")
     res = req.post("http://127.0.0.1:8000/jobs/", json=payload)
-    res.raise_for_status()
     return res
+
+
+def getJobs():
+    res = req.get("http://127.0.0.1:8000/jobs/")
+
+    return res
+
+def deleteJob(job_id: int):
+    res = req.delete(f"http://127.0.0.1:8000/jobs/?job_id={job_id}")
+    return res
+
+def updateJob(job_id: int, new_status: str):
+    res = req.patch(f"http://127.0.0.1:8000/jobs/?job_id={job_id}&new_status={new_status}")
+    return res
+
+
+

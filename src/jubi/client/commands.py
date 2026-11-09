@@ -1,21 +1,31 @@
 import click
-import psycopg as postgres
-from requests import ConnectionError
+from requests import ConnectionError, Response
 from jubi.client import controller
-from jubi.core.models.Job import JobStatus
-from jubi.core.services import job_service, notification_service, resume_service
+from jubi.core.models.Job import Job, JobStatus
+from jubi.core.services import resume_service
 from jubi.integrations.exceptions import (
     JobDescriptionError,
-    JobWriteError,
     JobValidationError,
     NotificationError,
     ResumeAccessError,
     ResumeUploadError,
 )
-from jubi.core.repository.database import DatabaseController as db
 from datetime import datetime, timezone
-import json as json
 from pathlib import Path
+
+
+SERVER_UNREACHABLE = "[ERROR] Could not connect to the server. Please try again later."
+
+
+def _error_message(res: Response) -> str:
+    """Pull a readable error out of a failed API response."""
+    try:
+        body = res.json()
+    except ValueError:
+        return res.text or res.reason
+    if isinstance(body, dict):
+        return str(body.get("message") or body.get("detail") or res.reason)
+    return res.reason
 
 
 @click.command(name="add", help="Add a new job to be tracked by Jubi")
@@ -34,27 +44,25 @@ from pathlib import Path
     prompt="Enter the application status. Default:",
     default=f"{JobStatus.APPLIED}",
 )
-
-# TODO Decouple CLI and serr
-
 def add(name, company, date, status):
+    if name is None:
+        name = click.prompt("Enter the job title")
+    if company is None:
+        company = click.prompt("Enter the company name")
+
     try:
-        if name is None:
-            name = click.prompt("Enter the job title")
-        if company is None:
-            company = click.prompt("Enter the company name")
-
         res = controller.postJob(name, company, date, status)
-        click.echo(res.json())
-
     except JobValidationError as e:
         raise click.ClickException(f"[ERROR] Invalid job data: {e}")
-    except JobWriteError as e:
-        raise click.ClickException(f"[ERROR] {e}")
-    except ConnectionError as e:
-        raise click.ClickException(
-            f"[ERROR] Could not connect to the server. Please try again later."
-        )
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+
+    if not res.ok:
+        raise click.ClickException(f"[ERROR] {_error_message(res)}")
+
+    click.echo(f"{name} at {company} was added to Jubi.")
+    if not res.json().get("notification_sent"):
+        click.echo("[WARNING] The Discord notification could not be sent.")
 
 
 @click.command(name="list", help="List all jobs currently being tracked")
@@ -70,49 +78,70 @@ def add(name, company, date, status):
 )
 def list_jobs(status: tuple):
     try:
-        print(type(status))
-        all_jobs = job_service.get_all_jobs(
-            ["online assessment" if s == "oa" else s for s in list(status)]
-        )
+        res = controller.getJobs()
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
 
-        if not all_jobs:
-            click.echo("No applications found")
-        else:
-            click.echo("----Applications-----")
-            for row in all_jobs:
-                click.echo(
-                    f"({row[0]}) {row[1]} at {row[2]}. Applied on: {row[3]} Status: {row[4]}."
-                )
-    except postgres.Error as e:
-        raise click.ClickException(f"Error: A Database Error Occurred {e}")
+    if not res.ok:
+        raise click.ClickException(f"[ERROR] {_error_message(res)}")
+
+    # GET /jobs/ has no status filter, so filtering happens client-side
+    wanted = {"online assessment" if s == "oa" else s for s in status}
+    jobs = [(job_id, Job.model_validate(data)) for job_id, data in res.json()]
+    jobs = [(job_id, job) for job_id, job in jobs if not wanted or job.status in wanted]
+
+    if not jobs:
+        click.echo("No applications found")
+        return
+
+    click.echo("----Applications-----")
+    for job_id, job in jobs:
+        click.echo(
+            f"({job_id}) {job.name} at {job.company}. "
+            f"Applied on: {job.date_applied.date()} Status: {job.status}."
+        )
 
 
 @click.command(name="delete", help="Remove a job from Jubi using a Job ID")
-@click.argument("job_id")
+@click.argument("job_id", type=int)
 def delete(job_id):
-    if click.confirm("Are you sure you want to delete this job?", abort=True):
-        try:
-            success = job_service.delete_job_from_db(job_id)
-            if success:
-                click.echo(f"Job #{job_id} was successfully deleted!")
-            else:
-                click.echo(f"Job #{job_id} was not found in the tracker")
-        except postgres.Error as e:
-            raise click.ClickException(f"Error{e}")
+    click.confirm("Are you sure you want to delete this job?", abort=True)
+    try:
+        res = controller.deleteJob(job_id)
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+
+    if res.status_code == 404:
+        click.echo(f"Job #{job_id} was not found in the tracker")
+    elif not res.ok:
+        raise click.ClickException(
+            f"[ERROR] Could not delete Job #{job_id}: {_error_message(res)}"
+        )
+    else:
+        click.echo(f"Job #{job_id} was successfully deleted!")
 
 
 @click.command(name="update", help="Update job status")
-@click.argument("job_id")
-@click.option("--status", "-s", help="The new status of the application")
+@click.argument("job_id", type=int)
+@click.option(
+    "--status", "-s", required=True, help="The new status of the application"
+)
 def update(job_id, status):
     try:
-        success = job_service.update_status(job_id, status)
-        if success:
-            click.echo(f"Job #{job_id}'s status was successfully updated to {status}")
-        else:
-            click.echo(f"Job #{job_id} was not found in the tracker")
-    except postgres.Error as e:
-        raise click.ClickException(f"Error {e}")
+        res = controller.updateJob(job_id, status)
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+
+    if res.status_code == 404:
+        click.echo(f"Job #{job_id} was not found in the tracker")
+    elif res.status_code == 400:
+        raise click.ClickException(f"[ERROR] '{status}' is not a valid status")
+    elif not res.ok:
+        raise click.ClickException(
+            f"[ERROR] Could not update Job #{job_id}: {_error_message(res)}"
+        )
+    else:
+        click.echo(f"Job #{job_id}'s status was successfully updated to {status}")
 
 
 @click.command(name="analyze", help="Analyze your resume against a job description")
@@ -122,7 +151,6 @@ def update(job_id, status):
 def analyze(job_file):
     click.echo("Your analysis will be sent to Discord. This may take a few minutes...")
     try:
-        # resume_service.analyze_resume(job_file)
         res = controller.getAnalysis(job_file)
         click.echo("Your resume analysis has just been sent to Discord")
     except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:

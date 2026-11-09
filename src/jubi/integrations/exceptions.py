@@ -24,3 +24,21 @@ class ResumeAccessError(Exception):
 
 class JobDescriptionError(Exception):
     """Raise when no job descript"""
+
+
+class JobRetrievalError(Exception):
+    """Raise when no job"""
+
+    pass
+
+
+class JobDeletionError(Exception):
+    """Raise when no job"""
+
+    pass
+
+
+class JobUpdateError(Exception):
+    """Raise when no job"""
+
+    pass

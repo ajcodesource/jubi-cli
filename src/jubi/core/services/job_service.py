@@ -2,6 +2,9 @@ from jubi.core.models.Job import Job
 from jubi.core.repository import job_repository
 from jubi.integrations.notifications import Notifications
 from jubi.integrations.exceptions import (
+    JobDeletionError,
+    JobRetrievalError,
+    JobUpdateError,
     JobWriteError,
     JobValidationError,
     NotificationError,
@@ -35,13 +38,19 @@ def add_job(name, company, date, status):
 
 
 def get_all_jobs(status):
-    result = job_repository.list_all_jobs(status)
-    return result
+    try:
+        result = job_repository.list_all_jobs(status)
+        return result
+    except PGError as e:
+        raise JobRetrievalError(f"Error while trying to find job. {e}")
 
 
 def delete_job_from_db(job_id: int):
-    success = job_repository.delete_job(job_id)
-    return success
+    try:
+        result = job_repository.delete_job(job_id)
+        return result
+    except PGError as e:
+        raise JobDeletionError(f"Error while trying to find job. {e}")
 
 
 def update_status(job_id: int, new_status: str):
@@ -49,5 +58,8 @@ def update_status(job_id: int, new_status: str):
     if convert_status is None:
         raise JobValidationError("status is invalid")
 
-    success = job_repository.update_job_status(job_id=job_id, new_status=new_status)
-    return success
+    try:
+        result = job_repository.update_job_status(job_id=job_id, new_status=new_status)
+        return result
+    except PGError as e:
+        raise JobUpdateError(f"couldnt update")
