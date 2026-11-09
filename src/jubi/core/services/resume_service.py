@@ -8,7 +8,7 @@ from jubi.integrations.exceptions import (
 )
 from requests.exceptions import RequestException
 from pypdf import PdfReader
-from jubi.client.llm_client import LLM_Client
+from jubi.integrations.gemini.llm_client import LLM_Client
 from jubi.integrations.notifications import Notifications
 
 
