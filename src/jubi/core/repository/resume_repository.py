@@ -12,7 +12,7 @@ class ResumeRepository:
 
     # TODO add file
     def add_resume(self, resume: Path) -> bool:
-        if resume.exists() and resume.is_file():
+        if resume.exists() and resume.is_file() and resume.suffix.lower() == ".pdf":
             shutil.copy(resume, self.resume_path)
             return True
         return False
@@ -25,7 +25,5 @@ class ResumeRepository:
             if resume.is_file()
             and (
                 resume.suffix.lower() == ".pdf"
-                or resume.suffix.lower() == ".docx"
-                or resume.suffix.lower() == ".doc"
             )
         ]

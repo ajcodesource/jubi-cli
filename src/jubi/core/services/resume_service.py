@@ -40,7 +40,7 @@ def get_job_description(job_file: Path) -> str:
         raise JobDescriptionError(f"Couldn't read {job_file}: {e.strerror}") from e
 
 
-def analyze_resume(job_file: Path):
+def analyze_resume(job_desc: str):
     resumes = get_resumes()
     if not resumes:
         raise ResumeAccessError("No resume has been uploaded yet")
@@ -52,9 +52,8 @@ def analyze_resume(job_file: Path):
     for page in reader.pages:
         resume_text += page.extract_text()
 
-    description = get_job_description(job_file)
 
     analyzer = LLM_Client()
-    response = analyzer.send_prompt(resume_text, description)
+    response = analyzer.send_prompt(resume_text, job_desc)
 
     return response

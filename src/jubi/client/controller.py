@@ -6,7 +6,6 @@ from jubi.core.services.resume_service import get_job_description
 
 
 def getAnalysis(job_desc: Path):
-
     payload = {"job_description": get_job_description(job_desc), "resume_id": 0}
     res = req.get("http://127.0.0.1:8000/resume/analyze", json=payload)
     return res.json()

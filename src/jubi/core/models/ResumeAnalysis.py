@@ -13,5 +13,5 @@ class ResumeModelResponse(BaseModel):
 
 
 class ResumeAnalysisRequest(BaseModel):
-    job_description: Path = Field(description="Path to file containing job description")
+    job_description: str = Field(description="job description")
     resume_id: int | None = None

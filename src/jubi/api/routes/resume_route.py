@@ -11,8 +11,8 @@ router = APIRouter(
 )
 
 
-@router.get("/analyze")
-async def get_resume_analysis(request: ResumeAnalysisRequest):
+@router.post("/analyze")
+def get_resume_analysis(request: ResumeAnalysisRequest):
     notified = True
     try:
         response = analyze_resume(request.job_description)
