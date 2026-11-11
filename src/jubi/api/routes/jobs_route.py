@@ -89,7 +89,7 @@ def add_job(job: Job):
 @router.delete("/", status_code=status.HTTP_200_OK)
 def delete_job(job_id: int):
 
-    try: 
+    try:
         deleted_count = job_service.delete_job_from_db(job_id)
         if deleted_count != 0:
             return {"job_id": job_id, "deleted": True}

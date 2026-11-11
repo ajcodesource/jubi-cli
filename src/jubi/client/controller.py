@@ -30,13 +30,14 @@ def getJobs():
 
     return res
 
+
 def deleteJob(job_id: int):
     res = req.delete(f"http://127.0.0.1:8000/jobs/?job_id={job_id}")
     return res
 
+
 def updateJob(job_id: int, new_status: str):
-    res = req.patch(f"http://127.0.0.1:8000/jobs/?job_id={job_id}&new_status={new_status}")
+    res = req.patch(
+        f"http://127.0.0.1:8000/jobs/?job_id={job_id}&new_status={new_status}"
+    )
     return res
-
-
-

@@ -36,7 +36,7 @@ def _error_message(res: Response) -> str:
     "-d",
     prompt="Enter the date applied. Default:",
     type=click.DateTime(formats=["%Y-%m-%d"]),
-    default=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+    default=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
 )
 @click.option(
     "--status",
@@ -123,9 +123,7 @@ def delete(job_id):
 
 @click.command(name="update", help="Update job status")
 @click.argument("job_id", type=int)
-@click.option(
-    "--status", "-s", required=True, help="The new status of the application"
-)
+@click.option("--status", "-s", required=True, help="The new status of the application")
 def update(job_id, status):
     try:
         res = controller.updateJob(job_id, status)

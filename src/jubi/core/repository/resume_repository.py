@@ -22,8 +22,5 @@ class ResumeRepository:
         return [
             resume
             for resume in self.resume_path.iterdir()
-            if resume.is_file()
-            and (
-                resume.suffix.lower() == ".pdf"
-            )
+            if resume.is_file() and (resume.suffix.lower() == ".pdf")
         ]

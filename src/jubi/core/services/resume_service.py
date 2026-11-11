@@ -52,7 +52,6 @@ def analyze_resume(job_desc: str):
     for page in reader.pages:
         resume_text += page.extract_text()
 
-
     analyzer = LLM_Client()
     response = analyzer.send_prompt(resume_text, job_desc)
 
