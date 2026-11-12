@@ -3,7 +3,7 @@ from requests import ConnectionError, Response
 from jubi.client import controller
 from jubi.core.models.Job import Job, JobStatus
 from jubi.core.services import resume_service
-from jubi.integrations.exceptions import (
+from jubi.exceptions.exceptions import (
     JobDescriptionError,
     JobValidationError,
     NotificationError,

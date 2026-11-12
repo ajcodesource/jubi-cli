@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from jubi.core.services import job_service, notification_service
 from jubi.core.models.Job import Job
 from psycopg import Error
-from jubi.integrations.exceptions import (
+from jubi.exceptions.exceptions import (
     JobDeletionError,
     JobRetrievalError,
     JobUpdateError,

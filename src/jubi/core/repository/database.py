@@ -4,11 +4,15 @@ from psycopg import Connection as PGConnection
 import os
 from pathlib import Path
 
-dotenv_path = Path(__file__).resolve().parents[3] / ".env"
+dotenv_path = Path(__file__).resolve().parents[4] / ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
 
 class DatabaseController:
+    @staticmethod
+    def _get_env_path():
+        return dotenv_path
+
     @staticmethod
     def get_PG_database() -> PGConnection:
         return postgres.connect(os.environ["DATABASE"])

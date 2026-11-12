@@ -1,7 +1,7 @@
 from jubi.core.models.Job import Job
 from jubi.core.repository import job_repository
 from jubi.integrations.notifications import Notifications
-from jubi.integrations.exceptions import (
+from jubi.exceptions.exceptions import (
     JobDeletionError,
     JobRetrievalError,
     JobUpdateError,
@@ -42,7 +42,7 @@ def get_all_jobs(status):
         result = job_repository.list_all_jobs(status)
         return result
     except PGError as e:
-        raise JobRetrievalError(f"Error while trying to find job. {e}")
+        raise JobRetrievalError(f"Error while trying to find jobs. {e}")
 
 
 def delete_job_from_db(job_id: int):

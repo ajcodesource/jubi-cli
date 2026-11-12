@@ -1,6 +1,6 @@
 from requests import RequestException
 
-from jubi.integrations.exceptions import NotificationError
+from jubi.exceptions.exceptions import NotificationError
 from jubi.integrations.notifications import Notifications
 
 

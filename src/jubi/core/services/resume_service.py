@@ -1,6 +1,6 @@
 from pathlib import Path
 from jubi.core.repository.resume_repository import ResumeRepository
-from jubi.integrations.exceptions import (
+from jubi.exceptions.exceptions import (
     JobDescriptionError,
     NotificationError,
     ResumeAccessError,

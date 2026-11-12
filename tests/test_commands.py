@@ -14,9 +14,4 @@ from jubi.integrations.notifications import Notifications
 from jubi.core.repository.resume_repository import ResumeRepository
 
 
-
 # TODO CLI RUNNER
-
-
-
-

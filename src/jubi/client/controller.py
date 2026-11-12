@@ -1,7 +1,7 @@
 import requests as req
 from pathlib import Path
 from jubi.core.models.Job import Job
-from jubi.integrations.exceptions import JobValidationError
+from jubi.exceptions.exceptions import JobValidationError
 from jubi.core.services.resume_service import get_job_description
 
 
