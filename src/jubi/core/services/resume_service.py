@@ -12,21 +12,22 @@ from jubi.integrations.gemini.llm_client import LLM_Client
 from jubi.integrations.notifications import Notifications
 
 
-def upload_resume(resume: Path):
+def upload_resume(resume: Path, resume_directory: Path | None = None ):
 
     try:
-        repo = ResumeRepository()
-        return repo.add_resume(resume)
+        repo = ResumeRepository(resume_directory) if resume_directory else ResumeRepository()
+        result = repo.add_resume(resume)
+        return result
     except OSError as e:
         raise ResumeUploadError(f"Failed to upload {e}")
 
 
-def get_resumes() -> list[Path]:
+def get_resumes(resume_directory:Path | None = None) -> list[Path]:
     try:
-        repo = ResumeRepository()
+        repo = ResumeRepository(resume_directory) if resume_directory else ResumeRepository()
         return repo.get_resumes()
     except OSError as e:
-        raise ResumeUploadError(f"Failed to get resume {e}")
+        raise ResumeUploadError(f"Failed to get resumes {e}")
 
 
 def get_job_description(job_file: Path) -> str:

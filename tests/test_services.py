@@ -1,13 +1,14 @@
 from datetime import date
 import os
 from unittest.mock import MagicMock
-
+from pathlib import Path
 import psycopg
 import pytest
 from psycopg import conninfo
 from jubi.core.repository.database import DatabaseController
-from jubi.core.services import job_service
-from jubi.exceptions.exceptions import JobRetrievalError, JobUpdateError, JobValidationError
+from jubi.core.repository.resume_repository import ResumeRepository
+from jubi.core.services import job_service, resume_service
+from jubi.exceptions.exceptions import JobRetrievalError, JobUpdateError, JobValidationError, ResumeUploadError
 from jubi.integrations.notifications import Notifications
 
 class TestAddJob:
@@ -95,3 +96,41 @@ class TestNotifications:
 
         with pytest.raises(RuntimeError):
             Notifications()
+
+class TestResumeService:
+    def test_add_resume(self, tmp_path):
+        # add the resume
+        resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Resume_Data.pdf")
+        result = resume_service.upload_resume(resume, tmp_path / "jubi")
+
+        assert result == True 
+
+        # get resumes
+        resume_list = resume_service.get_resumes(tmp_path / "jubi")
+        assert len(resume_list) == 1
+        assert "Akli_Amrous_Resume_Data.pdf" in str(resume_list[0])
+        assert Path(tmp_path / "jubi" / "Akli_Amrous_Resume_Data.pdf") == resume_list[0]
+
+    def test_add_resume_does_not_exist(self, tmp_path):
+        # add the resume
+        resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Data.pdf")
+        result = resume_service.upload_resume(resume, tmp_path / "jubi")
+
+        assert result == False
+
+        # get resumes
+        resume_list = resume_service.get_resumes(tmp_path / "jubi")
+        assert len(resume_list) == 0
+        assert Path(tmp_path / "jubi" / "Akli_Amrous_Data.pdf") not in resume_list
+
+
+    def test_add_resume_os_error(self, tmp_path, monkeypatch):
+        def mock_add_resume(*args, **kwargs):
+            raise OSError("Something went wrong with the file system")
+
+        monkeypatch.setattr(ResumeRepository, "add_resume", mock_add_resume)
+
+        with pytest.raises(ResumeUploadError):
+            resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Resume_Data.pdf")
+            result = resume_service.upload_resume(resume, tmp_path / "jubi")
+            
