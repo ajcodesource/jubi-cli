@@ -80,24 +80,35 @@ class TestDatabase:
 class TestResumeRepository:
     def test_add_resume(self, tmp_path):
         # arrange
-        resume = Path("/Users/akliamrous/Downloads/Resume_Akli_Amrous_Backend-2.pdf")
-        repo = ResumeRepository(tmp_path / "jubi")
+        dir = Path(tmp_path / "fake_desktop")
+        dir.mkdir(parents=True, exist_ok=True)
+        create_fake_resume(str(dir / "fake_resume.pdf"))
+        
+        repo = ResumeRepository(tmp_path / "resumes")
 
-        repo.add_resume(resume)
+        repo.add_resume(dir / "fake_resume.pdf")
 
-        assert Path(repo.resume_path / "Resume_Akli_Amrous_Backend-2.pdf").exists()
+        assert Path(repo.resume_path / "fake_resume.pdf").exists()
 
     def test_add_resume_doesnt_exist(self, tmp_path):
         # arrange
-        resume = Path("/Users/akliamrous/Desktop/John_Amrous_Resume.pdf")
-        repo = ResumeRepository(tmp_path / "jubi")
+        dir = Path(tmp_path / "fake_desktop")
+        dir.mkdir(parents=True, exist_ok=True)
+        create_fake_resume(str(dir / "fake_resume.pdf"))
+        
+        repo = ResumeRepository(tmp_path / "resumes")
+        bad_resume = Path(tmp_path / "John_Amrous_Resume.pdf")
+
         with pytest.raises(OSError):
-            repo.add_resume(resume)
+            repo.add_resume(bad_resume)
 
     def test_get_resumes(self, tmp_path):
-        resume = Path("/Users/akliamrous/Downloads/Akli_Amrous_Resume.pdf")
-        repo = ResumeRepository(tmp_path / "jubi")
+        dir = Path(tmp_path / "fake_desktop")
+        dir.mkdir(parents=True, exist_ok=True)
+        create_fake_resume(str(dir / "fake_resume.pdf"))
+                
+        repo = ResumeRepository(tmp_path / "resumes")
+        
+        repo.add_resume(dir / "fake_resume.pdf")
 
-        repo.add_resume(resume)
-
-        assert len(repo.get_resumes()) > 0
+        assert len(repo.get_resumes()) == 1
