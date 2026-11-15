@@ -12,48 +12,54 @@ from jubi.integrations.gemini.llm_client import LLM_Client
 from jubi.integrations.notifications import Notifications
 
 
-def upload_resume(resume: Path, resume_directory: Path | None = None ):
+class ResumeService(object):
+    def __init__(
+        self,
+        resume_repository: ResumeRepository,
+        llm_client: LLM_Client
+    ):
+        self.repo = resume_repository
+        self.llm = llm_client
 
-    try:
-        repo = ResumeRepository(resume_directory) if resume_directory else ResumeRepository()
-        result = repo.add_resume(resume)
-        return result
-    except OSError as e:
-        raise ResumeUploadError(f"Failed to upload {e}")
+    def upload_resume(
+        self,
+        resume: Path,
+    ):
 
+        try:
+            result = self.repo.add_resume(resume)
+            return result
+        except OSError as e:
+            raise ResumeUploadError(f"Failed to upload {e}")
 
-def get_resumes(resume_directory:Path | None = None) -> list[Path]:
-    try:
-        repo = ResumeRepository(resume_directory) if resume_directory else ResumeRepository()
-        return repo.get_resumes()
-    except OSError as e:
-        raise ResumeUploadError(f"Failed to get resumes {e}")
+    def get_resumes(self) -> list[Path]:
+        try:
+            return self.repo.get_resumes()
+        except OSError as e:
+            raise ResumeUploadError(f"Failed to get resumes {e}")
+    @staticmethod
+    def get_job_description(job_file: Path) -> str:
+        try:
+            return job_file.read_text(encoding="utf-8")
+        except FileNotFoundError as e:
+            raise JobDescriptionError(f"Job description not found: {job_file}") from e
+        except UnicodeDecodeError as e:
+            raise JobDescriptionError(f"{job_file} isn't a UTF-8 text file") from e
+        except OSError as e:
+            raise JobDescriptionError(f"Couldn't read {job_file}: {e.strerror}") from e
 
+    def analyze_resume(self, job_desc: str):
+        resumes = self.get_resumes()
+        if not resumes:
+            raise ResumeAccessError("No resume has been uploaded yet")
 
-def get_job_description(job_file: Path) -> str:
-    try:
-        return job_file.read_text(encoding="utf-8")
-    except FileNotFoundError as e:
-        raise JobDescriptionError(f"Job description not found: {job_file}") from e
-    except UnicodeDecodeError as e:
-        raise JobDescriptionError(f"{job_file} isn't a UTF-8 text file") from e
-    except OSError as e:
-        raise JobDescriptionError(f"Couldn't read {job_file}: {e.strerror}") from e
+        resume = resumes[0]
+        reader = PdfReader(resume)
 
+        resume_text: str = ""
+        for page in reader.pages:
+            resume_text += page.extract_text()
 
-def analyze_resume(job_desc: str):
-    resumes = get_resumes()
-    if not resumes:
-        raise ResumeAccessError("No resume has been uploaded yet")
+        response = self.llm.send_prompt(resume_text, job_desc)
 
-    resume = resumes[0]
-    reader = PdfReader(resume)
-
-    resume_text: str = ""
-    for page in reader.pages:
-        resume_text += page.extract_text()
-
-    analyzer = LLM_Client()
-    response = analyzer.send_prompt(resume_text, job_desc)
-
-    return response
+        return response

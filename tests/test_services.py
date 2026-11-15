@@ -50,7 +50,6 @@ class TestResumeService_LLM:
             resume_service.analyze_resume("description")
 
 
-
 class TestAddJob:
     def test_add_bad_job(self):
         with pytest.raises(JobValidationError):
@@ -137,7 +136,6 @@ class TestNotifications:
         with pytest.raises(RuntimeError):
             Notifications()
 
-
     def test_notification_fail_add(self, monkeypatch):
         def mock_request_post(*args, **kwargs):
             raise r.exceptions.HTTPError("Discord isn't available right now.")
@@ -147,7 +145,6 @@ class TestNotifications:
         with pytest.raises(r.exceptions.RequestException):
             notifier = Notifications()
             notifier.add_notif("Test", "Company")
-
 
 
 class TestResumeService:
@@ -162,7 +159,10 @@ class TestResumeService:
         resume_list = resume_service.get_resumes(tmp_path / "jubi")
         assert len(resume_list) == 1
         assert "Resume_Akli_Amrous_Backend-2.pdf" in str(resume_list[0])
-        assert Path(tmp_path / "jubi" / "Resume_Akli_Amrous_Backend-2.pdf") == resume_list[0]
+        assert (
+            Path(tmp_path / "jubi" / "Resume_Akli_Amrous_Backend-2.pdf")
+            == resume_list[0]
+        )
 
     def test_add_resume_does_not_exist(self, tmp_path):
         # add the resume

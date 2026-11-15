@@ -2,12 +2,13 @@ import requests as req
 from pathlib import Path
 from jubi.core.models.Job import Job
 from jubi.exceptions.exceptions import JobValidationError
-from jubi.core.services.resume_service import get_job_description
+from jubi.core.services.resume_service import ResumeService
 
 
 def getAnalysis(job_desc: Path):
-    payload = {"job_description": get_job_description(job_desc), "resume_id": 0}
-    res = req.get("http://127.0.0.1:8000/resume/analyze", json=payload)
+    description = ResumeService.get_job_description(job_desc)
+    payload = {"job_description": description, "resume_id": 0}
+    res = req.post("http://127.0.0.1:8000/resume/analyze", json=payload)
     return res.json()
 
 

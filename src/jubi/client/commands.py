@@ -2,6 +2,7 @@ import click
 from requests import ConnectionError, Response
 from jubi.client import controller
 from jubi.core.models.Job import Job, JobStatus
+from jubi.core.repository.resume_repository import ResumeRepository
 from jubi.core.services import resume_service
 from jubi.exceptions.exceptions import (
     JobDescriptionError,
@@ -12,6 +13,8 @@ from jubi.exceptions.exceptions import (
 )
 from datetime import datetime, timezone
 from pathlib import Path
+
+from jubi.integrations.gemini.llm_client import LLM_Client
 
 
 SERVER_UNREACHABLE = "[ERROR] Could not connect to the server. Please try again later."
@@ -165,7 +168,10 @@ def analyze(job_file):
 )
 def upload(resume_file):
     try:
-        resume_service.upload_resume(resume_file)
+        repository = ResumeRepository()
+        llm = LLM_Client()
+        service = resume_service.ResumeService(resume_repository=repository, llm_client=llm)
+        service.upload_resume(resume_file)
         click.echo("Upload successful")
     except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:
         raise click.ClickException(f"[ERROR] {e}")
