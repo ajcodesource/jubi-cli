@@ -170,7 +170,9 @@ def upload(resume_file):
     try:
         repository = ResumeRepository()
         llm = LLM_Client()
-        service = resume_service.ResumeService(resume_repository=repository, llm_client=llm)
+        service = resume_service.ResumeService(
+            resume_repository=repository, llm_client=llm
+        )
         service.upload_resume(resume_file)
         click.echo("Upload successful")
     except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:

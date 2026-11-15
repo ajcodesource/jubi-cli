@@ -20,34 +20,66 @@ from google import genai
 from jubi.integrations.gemini.llm_client import LLM_Client
 import json
 import requests as r
+from fpdf import FPDF
+
+def create_fake_resume(dir):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=16)
+
+    # Add a centered title
+    pdf.cell(
+        w=0,
+        h=10,
+        text="Hello, World!",
+        new_x="LMARGIN",
+        new_y="NEXT",
+        align="C",
+    )
+
+    # Add body text
+    pdf.set_font("Helvetica", size=12)
+    pdf.multi_cell(
+        w=0,
+        h=8,
+        text="This is a test resume. Perform your analysis as if this were a standard software engineering resume",
+    )
+
+    # Save the file
+
+    pdf.output(dir)
+
 
 
 class TestResumeService_LLM:
-    def test_resume_llm_client_error(self, monkeypatch):
-        def mock_create_interaction(*args, **kwargs):
-            raise errors.ClientError(400, "Something went wrong with your prompt!")
+    def test_resume_llm_client_error(self, fake_llm_client_client_error, tmp_path):
+        dir = Path(tmp_path / "resumes")
+        dir.mkdir(parents=True, exist_ok=True)
+        directory = str(dir / "fake_resume.pdf")
+        create_fake_resume(directory)
 
-        monkeypatch.setattr(
-            LLM_Client,
-            "send_prompt",
-            mock_create_interaction,
-        )
+        # Path doesn't automatically create directory, use mkdir
 
+        llm_client = fake_llm_client_client_error
+        repo = ResumeRepository(tmp_path / "resumes")
+        service = resume_service.ResumeService(repo, llm_client)
         with pytest.raises(errors.ClientError):
-            resume_service.analyze_resume("description")
+            service.analyze_resume("description")
 
-    def test_resume_llm_API_error(self, monkeypatch):
-        def mock_create_interaction(*args, **kwargs):
-            raise errors.APIError(500, "Something is wrong with the API!")
+    def test_resume_llm_API_error(self, fake_llm_client_api_error, tmp_path):
 
-        monkeypatch.setattr(
-            LLM_Client,
-            "send_prompt",
-            mock_create_interaction,
-        )
+        dir = Path(tmp_path / "resumes")
+        dir.mkdir(parents=True, exist_ok=True)
+        directory = str(dir / "fake_resume.pdf")
+        create_fake_resume(directory)
 
+        # Path doesn't automatically create directory, use mkdir
+
+        llm_client = fake_llm_client_api_error
+        repo = ResumeRepository(tmp_path / "resumes")
+        service = resume_service.ResumeService(repo, llm_client)
         with pytest.raises(errors.APIError):
-            resume_service.analyze_resume("description")
+            service.analyze_resume("description")
 
 
 class TestAddJob:
@@ -149,41 +181,44 @@ class TestNotifications:
 
 class TestResumeService:
     def test_add_resume(self, tmp_path):
-        # add the resume
-        resume = Path("/Users/akliamrous/Downloads/Resume_Akli_Amrous_Backend-2.pdf")
-        result = resume_service.upload_resume(resume, tmp_path / "jubi")
+        dir = Path(tmp_path / "Fake_Desktop")
+        dir.mkdir(parents=True, exist_ok=True)
+        directory = str(dir / "fake_resume.pdf")
+        create_fake_resume(directory)
 
-        assert result == True
+
+        # add the resume
+        resume = dir / "fake_resume.pdf"
+
+        repo = ResumeRepository(tmp_path / "resumes")
+        client = LLM_Client()
+        service = resume_service.ResumeService(repo, client)
+        try:
+            service.upload_resume(resume)
+        except OSError as e:
+            pytest.fail(f"Unexpected OSError Raised {e}")
 
         # get resumes
-        resume_list = resume_service.get_resumes(tmp_path / "jubi")
+        resume_list = service.get_resumes()
         assert len(resume_list) == 1
-        assert "Resume_Akli_Amrous_Backend-2.pdf" in str(resume_list[0])
+        assert "fake_resume.pdf" in str(resume_list[0])
         assert (
-            Path(tmp_path / "jubi" / "Resume_Akli_Amrous_Backend-2.pdf")
+            Path(tmp_path / "resumes" / "fake_resume.pdf")
             == resume_list[0]
         )
 
     def test_add_resume_does_not_exist(self, tmp_path):
         # add the resume
-        resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Data.pdf")
-        result = resume_service.upload_resume(resume, tmp_path / "jubi")
-
-        assert result == False
-
-        # get resumes
-        resume_list = resume_service.get_resumes(tmp_path / "jubi")
-        assert len(resume_list) == 0
-        assert Path(tmp_path / "jubi" / "Akli_Amrous_Data.pdf") not in resume_list
-
-    def test_add_resume_os_error(self, tmp_path, monkeypatch):
-        def mock_add_resume(*args, **kwargs):
-            raise OSError("Something went wrong with the file system")
-
-        monkeypatch.setattr(ResumeRepository, "add_resume", mock_add_resume)
 
         with pytest.raises(ResumeUploadError):
-            resume = Path(
-                "/Users/akliamrous/Downloads/Resume_Akli_Amrous_Backend-1.pdf"
-            )
-            resume_service.upload_resume(resume, tmp_path / "jubi")
+            dir = Path(tmp_path / "Fake_Desktop")
+            dir.mkdir(parents=True, exist_ok=True)
+            resume = dir / "fake_resume.pdf"
+            repo = ResumeRepository(tmp_path / "resumes")
+            client = LLM_Client()
+            service = resume_service.ResumeService(repo, client)
+            service.upload_resume(resume)
+        
+            
+
+        

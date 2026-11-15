@@ -7,6 +7,34 @@ from jubi.core.repository.database import DatabaseController
 from jubi.core.repository.resume_repository import ResumeRepository
 from psycopg import conninfo
 import os
+from fpdf import FPDF
+
+def create_fake_resume(dir):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=16)
+
+    # Add a centered title
+    pdf.cell(
+        w=0,
+        h=10,
+        text="Hello, World!",
+        new_x="LMARGIN",
+        new_y="NEXT",
+        align="C",
+    )
+
+    # Add body text
+    pdf.set_font("Helvetica", size=12)
+    pdf.multi_cell(
+        w=0,
+        h=8,
+        text="This is a test resume. Perform your analysis as if this were a standard software engineering resume",
+    )
+
+    # Save the file
+
+    pdf.output(dir)
 
 
 @pytest.fixture(autouse=True)
@@ -63,10 +91,8 @@ class TestResumeRepository:
         # arrange
         resume = Path("/Users/akliamrous/Desktop/John_Amrous_Resume.pdf")
         repo = ResumeRepository(tmp_path / "jubi")
-
-        result = repo.add_resume(resume)
-
-        assert result == False
+        with pytest.raises(OSError):
+            repo.add_resume(resume)
 
     def test_get_resumes(self, tmp_path):
         resume = Path("/Users/akliamrous/Downloads/Akli_Amrous_Resume.pdf")

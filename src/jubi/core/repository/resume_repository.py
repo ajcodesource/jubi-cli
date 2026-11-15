@@ -11,11 +11,14 @@ class ResumeRepository:
         self.resume_path.mkdir(parents=True, exist_ok=True)
 
     # TODO add file
-    def add_resume(self, resume: Path) -> bool:
+    def add_resume(self, resume: Path):
         if resume.exists() and resume.is_file() and resume.suffix.lower() == ".pdf":
             shutil.copy(resume, self.resume_path)
-            return True
-        return False
+
+        else:
+            raise OSError(
+                "Could not upload resume. It either doesn't exist, is not a valid file or a PDF"
+            )
 
     # TODO get files
     def get_resumes(self) -> list[Path]:

@@ -13,11 +13,7 @@ from jubi.integrations.notifications import Notifications
 
 
 class ResumeService(object):
-    def __init__(
-        self,
-        resume_repository: ResumeRepository,
-        llm_client: LLM_Client
-    ):
+    def __init__(self, resume_repository: ResumeRepository, llm_client):
         self.repo = resume_repository
         self.llm = llm_client
 
@@ -27,8 +23,7 @@ class ResumeService(object):
     ):
 
         try:
-            result = self.repo.add_resume(resume)
-            return result
+            self.repo.add_resume(resume)
         except OSError as e:
             raise ResumeUploadError(f"Failed to upload {e}")
 
@@ -37,6 +32,7 @@ class ResumeService(object):
             return self.repo.get_resumes()
         except OSError as e:
             raise ResumeUploadError(f"Failed to get resumes {e}")
+
     @staticmethod
     def get_job_description(job_file: Path) -> str:
         try:
