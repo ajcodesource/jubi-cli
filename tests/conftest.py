@@ -10,6 +10,7 @@ from jubi.core.repository.database import DatabaseController
 dotenv_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
+
 @pytest.fixture(autouse=True)
 def get_database(monkeypatch):
     connection_string = os.getenv("TESTDATABASE")

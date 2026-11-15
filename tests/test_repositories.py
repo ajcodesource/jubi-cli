@@ -52,12 +52,12 @@ class TestDatabase:
 class TestResumeRepository:
     def test_add_resume(self, tmp_path):
         # arrange
-        resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Resume.pdf")
+        resume = Path("/Users/akliamrous/Downloads/Resume_Akli_Amrous_Backend-2.pdf")
         repo = ResumeRepository(tmp_path / "jubi")
 
         repo.add_resume(resume)
 
-        assert Path(repo.resume_path / "Akli_Amrous_Resume.pdf").exists()
+        assert Path(repo.resume_path / "Resume_Akli_Amrous_Backend-2.pdf").exists()
 
     def test_add_resume_doesnt_exist(self, tmp_path):
         # arrange

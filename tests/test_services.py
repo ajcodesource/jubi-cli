@@ -8,18 +8,59 @@ from psycopg import conninfo
 from jubi.core.repository.database import DatabaseController
 from jubi.core.repository.resume_repository import ResumeRepository
 from jubi.core.services import job_service, resume_service
-from jubi.exceptions.exceptions import JobRetrievalError, JobUpdateError, JobValidationError, ResumeUploadError
+from jubi.exceptions.exceptions import (
+    JobRetrievalError,
+    JobUpdateError,
+    JobValidationError,
+    ResumeUploadError,
+)
 from jubi.integrations.notifications import Notifications
+from google.genai import errors
+from google import genai
+from jubi.integrations.gemini.llm_client import LLM_Client
+import json
+import requests as r
+
+
+class TestResumeService_LLM:
+    def test_resume_llm_client_error(self, monkeypatch):
+        def mock_create_interaction(*args, **kwargs):
+            raise errors.ClientError(400, "Something went wrong with your prompt!")
+
+        monkeypatch.setattr(
+            LLM_Client,
+            "send_prompt",
+            mock_create_interaction,
+        )
+
+        with pytest.raises(errors.ClientError):
+            resume_service.analyze_resume("description")
+
+    def test_resume_llm_API_error(self, monkeypatch):
+        def mock_create_interaction(*args, **kwargs):
+            raise errors.APIError(500, "Something is wrong with the API!")
+
+        monkeypatch.setattr(
+            LLM_Client,
+            "send_prompt",
+            mock_create_interaction,
+        )
+
+        with pytest.raises(errors.APIError):
+            resume_service.analyze_resume("description")
+
+
 
 class TestAddJob:
     def test_add_bad_job(self):
         with pytest.raises(JobValidationError):
-            job_service.add_job("Software Engineer", "Meta", date(2026, 11, 11), "labubu")
+            job_service.add_job(
+                "Software Engineer", "Meta", date(2026, 11, 11), "labubu"
+            )
             job_service.add_job("Software Engineer", "Meta", "cool date", "labubu")
-        
+
 
 class TestListAllJobs:
-
     def test_list_jobs(self):
         # call job_service.get_all_jobs and get the rows returned
         # There should only be one job
@@ -43,7 +84,6 @@ class TestListAllJobs:
 
     def test_list_jobs_returns_nothing(self):
         assert job_service.get_all_jobs(["Cool", "beans"]) == []
-            
 
 
 class TestUpdateStatus:
@@ -97,19 +137,32 @@ class TestNotifications:
         with pytest.raises(RuntimeError):
             Notifications()
 
+
+    def test_notification_fail_add(self, monkeypatch):
+        def mock_request_post(*args, **kwargs):
+            raise r.exceptions.HTTPError("Discord isn't available right now.")
+
+        monkeypatch.setattr(r, "post", mock_request_post)
+
+        with pytest.raises(r.exceptions.RequestException):
+            notifier = Notifications()
+            notifier.add_notif("Test", "Company")
+
+
+
 class TestResumeService:
     def test_add_resume(self, tmp_path):
         # add the resume
-        resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Resume_Data.pdf")
+        resume = Path("/Users/akliamrous/Downloads/Resume_Akli_Amrous_Backend-2.pdf")
         result = resume_service.upload_resume(resume, tmp_path / "jubi")
 
-        assert result == True 
+        assert result == True
 
         # get resumes
         resume_list = resume_service.get_resumes(tmp_path / "jubi")
         assert len(resume_list) == 1
-        assert "Akli_Amrous_Resume_Data.pdf" in str(resume_list[0])
-        assert Path(tmp_path / "jubi" / "Akli_Amrous_Resume_Data.pdf") == resume_list[0]
+        assert "Resume_Akli_Amrous_Backend-2.pdf" in str(resume_list[0])
+        assert Path(tmp_path / "jubi" / "Resume_Akli_Amrous_Backend-2.pdf") == resume_list[0]
 
     def test_add_resume_does_not_exist(self, tmp_path):
         # add the resume
@@ -123,7 +176,6 @@ class TestResumeService:
         assert len(resume_list) == 0
         assert Path(tmp_path / "jubi" / "Akli_Amrous_Data.pdf") not in resume_list
 
-
     def test_add_resume_os_error(self, tmp_path, monkeypatch):
         def mock_add_resume(*args, **kwargs):
             raise OSError("Something went wrong with the file system")
@@ -131,6 +183,7 @@ class TestResumeService:
         monkeypatch.setattr(ResumeRepository, "add_resume", mock_add_resume)
 
         with pytest.raises(ResumeUploadError):
-            resume = Path("/Users/akliamrous/Desktop/Akli_Amrous_Resume_Data.pdf")
-            result = resume_service.upload_resume(resume, tmp_path / "jubi")
-            
+            resume = Path(
+                "/Users/akliamrous/Downloads/Resume_Akli_Amrous_Backend-1.pdf"
+            )
+            resume_service.upload_resume(resume, tmp_path / "jubi")
