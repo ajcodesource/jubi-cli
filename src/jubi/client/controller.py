@@ -32,6 +32,11 @@ def getJobs():
     return res
 
 
+def getStatusHistory(job_id: int):
+    res = req.get(f"http://127.0.0.1:8000/jobs/history/?job_id={job_id}")
+    return res
+
+
 def deleteJob(job_id: int):
     res = req.delete(f"http://127.0.0.1:8000/jobs/?job_id={job_id}")
     return res

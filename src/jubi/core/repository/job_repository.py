@@ -2,6 +2,24 @@ from jubi.core.repository.database import DatabaseController as db
 from datetime import datetime
 
 
+def get_status_history(job_id: int):
+    QUERY = """
+                SELECT name, company, prev_status, new_status, date_change 
+                FROM jobs 
+                INNER JOIN status_history on jobs.job_id = status_history.job_id 
+                WHERE jobs.job_id = %s 
+                ORDER BY status_history.date_change ASC
+            """
+    conn = db.get_PG_database()
+    db.init_pg_database(conn)
+    new_conn = db.get_PG_database()
+
+    with new_conn as connection:
+        with connection.cursor() as cur:
+            cur.execute(QUERY, (job_id,))
+            return cur.fetchall()
+
+
 def add_job(name, company, date_applied, status):
     conn = db.get_PG_database()
     db.init_pg_database(conn)

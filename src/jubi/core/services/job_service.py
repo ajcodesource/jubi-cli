@@ -45,6 +45,14 @@ def get_all_jobs(status):
         raise JobRetrievalError(f"Error while trying to find jobs. {e}")
 
 
+def get_status_history(job_id: int):
+    try:
+        result = job_repository.get_status_history(job_id)
+        return result
+    except PGError as e:
+        raise JobRetrievalError(f"Error while trying to find jobs. {e}")
+
+
 def delete_job_from_db(job_id: int):
     try:
         result = job_repository.delete_job(job_id)

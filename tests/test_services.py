@@ -22,6 +22,7 @@ import json
 import requests as r
 from fpdf import FPDF
 
+
 def create_fake_resume(dir):
     pdf = FPDF()
     pdf.add_page()
@@ -48,7 +49,6 @@ def create_fake_resume(dir):
     # Save the file
 
     pdf.output(dir)
-
 
 
 class TestResumeService_LLM:
@@ -186,7 +186,6 @@ class TestResumeService:
         directory = str(dir / "fake_resume.pdf")
         create_fake_resume(directory)
 
-
         # add the resume
         resume = dir / "fake_resume.pdf"
 
@@ -202,10 +201,7 @@ class TestResumeService:
         resume_list = service.get_resumes()
         assert len(resume_list) == 1
         assert "fake_resume.pdf" in str(resume_list[0])
-        assert (
-            Path(tmp_path / "resumes" / "fake_resume.pdf")
-            == resume_list[0]
-        )
+        assert Path(tmp_path / "resumes" / "fake_resume.pdf") == resume_list[0]
 
     def test_add_resume_does_not_exist(self, tmp_path):
         # add the resume
@@ -218,7 +214,3 @@ class TestResumeService:
             client = LLM_Client()
             service = resume_service.ResumeService(repo, client)
             service.upload_resume(resume)
-        
-            
-
-        

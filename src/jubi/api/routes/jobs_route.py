@@ -45,6 +45,33 @@ def jobs():
         )
 
 
+@router.get("/history")
+def status_history(job_id: int):
+    try:
+        rows = job_service.get_status_history(job_id)
+    except JobRetrievalError:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "jobs": [],
+                "success": False,
+                "message": "An unexpected server error occurred. Please try again later.",
+            },
+        )
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
+        )
+    else:
+        return {
+            "job_name": rows[0][0],
+            "company": rows[0][1],
+            "history": [
+                {"date_change": row[4], "prev": row[2], "new": row[3]} for row in rows
+            ],
+        }
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def add_job(job: Job):
     notified = True

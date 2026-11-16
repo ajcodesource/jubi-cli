@@ -105,7 +105,33 @@ def list_jobs(status: tuple):
         )
 
 
-@click.command(name="delete", help="Remove a job from Jubi using a Job ID")
+@click.command(name="history", help="Retrieves the status history of a job")
+@click.argument("job_id", type=int)
+def history(job_id):
+    try:
+        res = controller.getStatusHistory(job_id)
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+
+    if res.status_code == 404:
+        raise click.ClickException(f"Job #{job_id} was not found in the tracker")
+    elif not res.ok:
+        raise click.ClickException(f"[ERROR] {_error_message(res)}")
+
+    status_history = res.json()
+    job_name = status_history["job_name"]
+    company = status_history["company"]
+    changes = status_history["history"]
+
+    click.echo(f"--- Status history for {job_name} at {company} ---")
+    for change in changes:
+        if change["prev"] == "":
+            click.echo(f"[{change['date_change']}] Applied")
+        else:
+            click.echo(f"[{change['date_change']}] {change['prev']} => {change['new']}")
+
+
+@click.command(name="delete", help="Remove a job")
 @click.argument("job_id", type=int)
 def delete(job_id):
     click.confirm("Are you sure you want to delete this job?", abort=True)

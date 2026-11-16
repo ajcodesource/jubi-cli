@@ -9,6 +9,7 @@ from psycopg import conninfo
 import os
 from fpdf import FPDF
 
+
 def create_fake_resume(dir):
     pdf = FPDF()
     pdf.add_page()
@@ -83,7 +84,7 @@ class TestResumeRepository:
         dir = Path(tmp_path / "fake_desktop")
         dir.mkdir(parents=True, exist_ok=True)
         create_fake_resume(str(dir / "fake_resume.pdf"))
-        
+
         repo = ResumeRepository(tmp_path / "resumes")
 
         repo.add_resume(dir / "fake_resume.pdf")
@@ -95,7 +96,7 @@ class TestResumeRepository:
         dir = Path(tmp_path / "fake_desktop")
         dir.mkdir(parents=True, exist_ok=True)
         create_fake_resume(str(dir / "fake_resume.pdf"))
-        
+
         repo = ResumeRepository(tmp_path / "resumes")
         bad_resume = Path(tmp_path / "John_Amrous_Resume.pdf")
 
@@ -106,9 +107,9 @@ class TestResumeRepository:
         dir = Path(tmp_path / "fake_desktop")
         dir.mkdir(parents=True, exist_ok=True)
         create_fake_resume(str(dir / "fake_resume.pdf"))
-                
+
         repo = ResumeRepository(tmp_path / "resumes")
-        
+
         repo.add_resume(dir / "fake_resume.pdf")
 
         assert len(repo.get_resumes()) == 1
