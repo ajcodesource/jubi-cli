@@ -171,6 +171,7 @@ def update(job_id, status):
         click.echo(f"Job #{job_id}'s status was successfully updated to {status}")
 
 
+# TODO Handle 400 and Crash
 @click.command(name="analyze", help="Analyze your resume against a job description")
 @click.argument(
     "job_file", type=click.Path(exists=True, dir_okay=False, path_type=Path)
@@ -180,12 +181,9 @@ def analyze(job_file):
     try:
         res = controller.getAnalysis(job_file)
         click.echo("Your resume analysis has just been sent to Discord")
-    except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:
-        raise click.ClickException(f"[ERROR] {e}")
-    except NotificationError as e:
-        raise click.ClickException(
-            f"[ERROR] Analysis finished but failed to send to Discord: {e}"
-        )
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+    
 
 
 @click.command(name="upload", help="Upload a resume to Jubi")
@@ -194,12 +192,30 @@ def analyze(job_file):
 )
 def upload(resume_file):
     try:
-        repository = ResumeRepository()
-        llm = LLM_Client()
-        service = resume_service.ResumeService(
-            resume_repository=repository, llm_client=llm
-        )
-        service.upload_resume(resume_file)
-        click.echo("Upload successful")
-    except (ResumeAccessError, ResumeUploadError, JobDescriptionError) as e:
-        raise click.ClickException(f"[ERROR] {e}")
+        res = controller.uploadResume(resume_file)
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+
+    if not res.ok:
+        raise click.ClickException(f"[ERROR] {_error_message(res)}")
+    else:
+        click.echo("Your resume was successfully uploaded to Jubi")
+
+
+@click.command(name="resumes", help="List resumes")
+def resumes():
+    try:
+        res = controller.getResumes()
+    except ConnectionError:
+        raise click.ClickException(SERVER_UNREACHABLE)
+
+    if res.status_code == 404:
+        raise click.ClickException("No resumes were found")
+
+    if not res.ok:
+        raise click.ClickException(f"[ERROR] {_error_message(res)}")
+
+    else:
+        list_resumes = res.json()["resumes"]
+        for i, resume in enumerate(list_resumes, start=1):
+            click.echo(f"({i}) {resume}")

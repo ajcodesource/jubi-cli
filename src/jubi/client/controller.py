@@ -47,3 +47,15 @@ def updateJob(job_id: int, new_status: str):
         f"http://127.0.0.1:8000/jobs/?job_id={job_id}&new_status={new_status}"
     )
     return res
+
+
+def getResumes():
+    res = req.get("http://127.0.0.1:8000/resume")
+    return res
+
+
+def uploadResume(resume: Path):
+    resume_path = str(resume)
+    payload = {"resume_path": resume_path}
+    res = req.post(f"http://127.0.0.1:8000/resume/upload/?resume_path={resume_path}")
+    return res

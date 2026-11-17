@@ -20,7 +20,6 @@ class ResumeRepository:
                 "Could not upload resume. It either doesn't exist, is not a valid file or a PDF"
             )
 
-    # TODO get files
     def get_resumes(self) -> list[Path]:
         return [
             resume

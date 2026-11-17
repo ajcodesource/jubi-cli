@@ -8,10 +8,10 @@ This is the only to-do list. Work from top to bottom. Only refactor code that th
 
 - [ ] **Status history** (`jubi history <job_id>`)
     - `add_job` and `update_job_status` already write to `status_history`; only the read side is missing
-    - [ ] Repository: query `status_history` by `job_id`, oldest first
-    - [ ] Service: turn `job_service` into a class that receives its repository (same style as `ResumeService`), then add `get_status_history`
-    - [ ] API: `GET /jobs/{job_id}/history` (404 if the job doesn't exist)
-    - [ ] CLI: `jubi history <job_id>`
+    - [X] Repository: query `status_history` by `job_id`, oldest first
+    - [X] Service: turn `job_service` into a class that receives its repository (same style as `ResumeService`), then add `get_status_history`
+    - [X] API: `GET /jobs/{job_id}/history` (404 if the job doesn't exist)
+    - [X] CLI: `jubi history <job_id>`
     - [ ] Tests for each layer
 
 ## Up next
