@@ -177,13 +177,24 @@ def update(job_id, status):
     "job_file", type=click.Path(exists=True, dir_okay=False, path_type=Path)
 )
 def analyze(job_file):
-    click.echo("Your analysis will be sent to Discord. This may take a few minutes...")
     try:
         res = controller.getAnalysis(job_file)
-        click.echo("Your resume analysis has just been sent to Discord")
     except ConnectionError:
         raise click.ClickException(SERVER_UNREACHABLE)
-    
+
+    if not res.ok:
+        if(res.status_code == 404):
+            raise click.ClickException(f"[ERROR] There are no resumes in Jubi to analyze")
+        elif(res.status_code == 500):
+            raise click.ClickException(f"[ERROR] Something went wrong. Try again later.")
+    else:
+        click.echo("Your analysis will be sent to Discord. This may take a few minutes...")
+        if(res.json()["notification_sent"] == True):
+            click.echo("Your analysis has been sent to Discord.")
+        else:
+            click.echo("Your analysis was successful but we were unable to reach Discord")
+            click.echo("---Analysis---")
+            click.echo(res.json()["response"])
 
 
 @click.command(name="upload", help="Upload a resume to Jubi")

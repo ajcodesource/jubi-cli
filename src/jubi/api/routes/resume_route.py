@@ -76,6 +76,8 @@ def get_resume_analysis(request: ResumeAnalysisRequest):
                 "message": "An unexpected server error occurred. Please try again later.",
             },
         )
+    except ResumeAccessError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No resumes found")
 
     try:
         notify = Notifications()

@@ -9,7 +9,7 @@ def getAnalysis(job_desc: Path):
     description = ResumeService.get_job_description(job_desc)
     payload = {"job_description": description, "resume_id": 0}
     res = req.post("http://127.0.0.1:8000/resume/analyze", json=payload)
-    return res.json()
+    return res
 
 
 def postJob(name, company, date, status):
@@ -56,6 +56,5 @@ def getResumes():
 
 def uploadResume(resume: Path):
     resume_path = str(resume)
-    payload = {"resume_path": resume_path}
     res = req.post(f"http://127.0.0.1:8000/resume/upload/?resume_path={resume_path}")
     return res
